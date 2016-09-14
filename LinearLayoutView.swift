@@ -5,6 +5,9 @@ class LinearLayoutView: LayoutView {
     var orientation : Orientation = Orientation.Vertical
     var spacing : CGFloat = 0.0
     
+    internal var heightAvailable : CGFloat = 0.0
+    internal var widthAvailable : CGFloat = 0.0
+    
     init( startX : CGFloat, startY: CGFloat, padding : Thickness) {
         super.init(padding: padding, startX: startY, startY: startY)
     }
@@ -29,6 +32,33 @@ class LinearLayoutView: LayoutView {
         var y = self.padding.Top;
         var maxWidth : CGFloat = 0.0
         
+        var matchParentChildren : Int = 0
+        var totalStaticHeight : CGFloat = 0.0
+        var totalStaticWidth : CGFloat = 0.0
+        
+        for view in self.subviews {
+            if let layoutView = view as? LinearLayoutView {
+                if layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
+                    matchParentChildren++
+                }
+            }
+        }
+        
+        if matchParentChildren > 0 {
+            for view in self.subviews {
+                if let layoutView = view as? LayoutView {
+                    if layoutView.getEffectiveHeightSizing() != Sizing.MatchParent {
+                        layoutView.layoutSubviews();
+                        totalStaticHeight += layoutView.frame.height
+                        totalStaticWidth += layoutView.frame.width
+                    }
+                } else {
+                    totalStaticHeight += view.frame.height
+                    totalStaticWidth += view.frame.width
+                }
+            }
+        }
+        
         let effectiveHeightSizing = self.getEffectiveHeightSizing()
         let effectiveWidthSizing = self.getEffectiveWidthSizing()
         
@@ -40,6 +70,16 @@ class LinearLayoutView: LayoutView {
         
         for view in self.subviews {
             if let layoutView = view as? LayoutView {
+                if  let linearLayoutView = view as? LinearLayoutView  {
+                    if layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
+                        linearLayoutView.heightAvailable = (dimensions[1] - totalStaticHeight) / CGFloat(matchParentChildren) - self.padding.Bottom - self.padding.Top
+                    }
+                    
+                    if layoutView.getEffectiveWidthSizing() == Sizing.MatchParent {
+                        linearLayoutView.widthAvailable = dimensions[0] - self.padding.Left - self.padding.Right
+                    }
+                }
+                
                 layoutView.performLayout()
             }
             
@@ -52,24 +92,27 @@ class LinearLayoutView: LayoutView {
             y += self.spacing + view.frame.height
         }
         
-        //TODO alignment next
-        
         var newWidth = self.frame.width
         var newHeight = self.frame.height
         
-        if self.widthSizing == Sizing.WrapContent {
+        if widthAvailable > 0 {
+            newWidth = widthAvailable
+        }
+        else if effectiveWidthSizing == Sizing.WrapContent {
             newWidth = maxWidth + self.padding.Right + self.padding.Left
         } else if self.widthSizing == Sizing.MatchParent {
             newWidth = maxWidth
         }
         
-        if self.heightSizing != Sizing.Static {
-            if self.heightSizing == Sizing.MatchParent {
-                newHeight = dimensions[1]
-            } else {
-                newHeight = y + self.padding.Bottom
-            }
+        if heightAvailable > 0 {
+            newHeight = heightAvailable
         }
+        else if effectiveHeightSizing == Sizing.MatchParent {
+            newHeight = dimensions[1]
+        } else {
+            newHeight = y + self.padding.Bottom
+        }
+        
         
         self.frame = CGRect(x: self.frame.minX, y: self.frame.minY, width: newWidth, height: newHeight)
     }
