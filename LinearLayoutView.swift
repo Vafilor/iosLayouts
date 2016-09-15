@@ -37,10 +37,8 @@ class LinearLayoutView: LayoutView {
         var totalStaticWidth : CGFloat = 0.0
         
         for view in self.subviews {
-            if let layoutView = view as? LinearLayoutView {
-                if layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
-                    matchParentChildren++
-                }
+            if let layoutView = view as? LinearLayoutView where layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
+                matchParentChildren++
             }
         }
         
