@@ -5,9 +5,6 @@ class LinearLayoutView: LayoutView {
     var orientation : Orientation = Orientation.Vertical
     var spacing : CGFloat = 0.0
     
-    internal var heightAvailable : CGFloat = 0.0
-    internal var widthAvailable : CGFloat = 0.0
-    
     init( startX : CGFloat, startY: CGFloat, padding : Thickness) {
         super.init(padding: padding, startX: startY, startY: startY)
     }
@@ -22,9 +19,6 @@ class LinearLayoutView: LayoutView {
         } else {
             self.layoutSubviewsHorizontally()
         }
-        
-        self.processGravity()
-        
     }
     
     private func layoutSubviewsVertically() {
@@ -38,7 +32,7 @@ class LinearLayoutView: LayoutView {
         
         for view in self.subviews {
             if let layoutView = view as? LinearLayoutView where layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
-                matchParentChildren++
+                matchParentChildren += 1
             }
         }
         
@@ -159,57 +153,6 @@ class LinearLayoutView: LayoutView {
         }
         
         self.frame = CGRect(x: self.frame.minX, y: self.frame.minY, width: newWidth, height: newHeight)
-    }
-    
-    private func getMaxWidthHeightForMatchParent(view : UIView) -> [CGFloat] {
-        var maxWidth : CGFloat = 0.0
-        var maxHeight : CGFloat = 0.0
-        
-        var superview = view.superview
-        
-        while superview != nil && superview as? LayoutView != nil {
-            superview = superview!.superview
-        }
-        
-        if let nonLayoutView = superview {
-            maxWidth = nonLayoutView.frame.width
-            maxHeight = nonLayoutView.frame.height
-        }
-        
-        let dimensions : [CGFloat] = [maxWidth, maxHeight]
-        
-        return dimensions
-    }
-    
-    private func processGravity() {
-        for view in self.subviews {
-            if let gravity = self.viewGravities[view.hashValue] {
-                if LinearLayoutView.isGravityApplicable(gravity, orientation: self.orientation) {
-                    switch gravity {
-                        case Gravity.Bottom:
-                            view.frame = CGRect(x: view.frame.minX, y: self.frame.maxY - self.padding.Bottom - view.frame.height, width: view.frame.width, height: view.frame.height)
-                        case Gravity.Top:
-                            view.frame = CGRect(x: view.frame.minX, y: self.frame.minY + self.padding.Top + view.frame.height, width: view.frame.width, height: view.frame.height)
-                        
-                        default:
-                            break
-                            //Do nothing by default
-                    }
-                }
-            }
-        }
-    }
-    
-    private static func isGravityApplicable(gravity : Gravity, orientation : Orientation) -> Bool {
-        if orientation == Orientation.Horizontal {
-            return gravity == Gravity.Bottom ||
-                   gravity == Gravity.Top
-            ;
-        }
-        
-        return gravity == Gravity.Left ||
-               gravity == Gravity.Right
-        ;
     }
     
     required init?(coder aDecoder: NSCoder) {

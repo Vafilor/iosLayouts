@@ -3,9 +3,11 @@ import UIKit
 
 class LayoutView : UIView {
     var padding : Thickness
-    var viewGravities = [Int : Gravity]()
+    var viewGravities = [Int : Int]()
     var widthSizing : Sizing;
     var heightSizing : Sizing;
+    internal var heightAvailable : CGFloat = 0.0
+    internal var widthAvailable : CGFloat = 0.0
     
     init(padding : Thickness, startX : CGFloat, startY : CGFloat) {
         self.widthSizing = Sizing.Static
@@ -19,7 +21,7 @@ class LayoutView : UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func addSubview(view : UIView, gravity : Gravity) {
+    func addSubview(view : UIView, gravity : Int) {
         self.viewGravities[view.hash] = gravity
         self.addSubview(view)
     }
@@ -58,5 +60,25 @@ class LayoutView : UIView {
         }
         
         return self.widthSizing;
+    }
+    
+    internal func getMaxWidthHeightForMatchParent(view : UIView) -> [CGFloat] {
+        var maxWidth : CGFloat = 0.0
+        var maxHeight : CGFloat = 0.0
+        
+        var superview = view.superview
+        
+        while superview != nil && superview as? LayoutView != nil {
+            superview = superview!.superview
+        }
+        
+        if let nonLayoutView = superview {
+            maxWidth = nonLayoutView.frame.width
+            maxHeight = nonLayoutView.frame.height
+        }
+        
+        let dimensions : [CGFloat] = [maxWidth, maxHeight]
+        
+        return dimensions
     }
 }
