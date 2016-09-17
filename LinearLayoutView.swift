@@ -19,6 +19,8 @@ class LinearLayoutView: LayoutView {
         } else {
             self.layoutSubviewsHorizontally()
         }
+        
+        self.processGravity()
     }
     
     private func layoutSubviewsVertically() {
@@ -31,7 +33,7 @@ class LinearLayoutView: LayoutView {
         var totalStaticWidth : CGFloat = 0.0
         
         for view in self.subviews {
-            if let layoutView = view as? LinearLayoutView where layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
+            if let layoutView = view as? LayoutView where layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
                 matchParentChildren += 1
             }
         }
@@ -39,9 +41,19 @@ class LinearLayoutView: LayoutView {
         if matchParentChildren > 0 {
             for view in self.subviews {
                 if let layoutView = view as? LayoutView {
+                    var laidOutSubviews = false
                     if layoutView.getEffectiveHeightSizing() != Sizing.MatchParent {
-                        layoutView.layoutSubviews();
+                        layoutView.performLayout();
+                        laidOutSubviews = true
+                        
                         totalStaticHeight += layoutView.frame.height
+                    }
+                    
+                    if layoutView.getEffectiveWidthSizing() != Sizing.MatchParent {
+                        if !laidOutSubviews {
+                            layoutView.performLayout()
+                        }
+                        
                         totalStaticWidth += layoutView.frame.width
                     }
                 } else {
@@ -49,6 +61,8 @@ class LinearLayoutView: LayoutView {
                     totalStaticWidth += view.frame.width
                 }
             }
+            
+            totalStaticHeight += CGFloat((self.subviews.count - 1)) * self.spacing
         }
         
         let effectiveHeightSizing = self.getEffectiveHeightSizing()
@@ -62,14 +76,12 @@ class LinearLayoutView: LayoutView {
         
         for view in self.subviews {
             if let layoutView = view as? LayoutView {
-                if  let linearLayoutView = view as? LinearLayoutView  {
-                    if layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
-                        linearLayoutView.heightAvailable = (dimensions[1] - totalStaticHeight) / CGFloat(matchParentChildren) - self.padding.Bottom - self.padding.Top
-                    }
-                    
-                    if layoutView.getEffectiveWidthSizing() == Sizing.MatchParent {
-                        linearLayoutView.widthAvailable = dimensions[0] - self.padding.Left - self.padding.Right
-                    }
+                if layoutView.getEffectiveHeightSizing() == Sizing.MatchParent {
+                    layoutView.heightAvailable = (dimensions[1] - totalStaticHeight) / CGFloat(matchParentChildren) - self.padding.Bottom - self.padding.Top
+                }
+                
+                if layoutView.getEffectiveWidthSizing() == Sizing.MatchParent {
+                    layoutView.widthAvailable = dimensions[0] - self.padding.Left - self.padding.Right
                 }
                 
                 layoutView.performLayout()
@@ -153,6 +165,23 @@ class LinearLayoutView: LayoutView {
         }
         
         self.frame = CGRect(x: self.frame.minX, y: self.frame.minY, width: newWidth, height: newHeight)
+    }
+    
+    private func processGravity() {
+        for view in self.subviews {
+            if let gravity = self.viewGravities[view.hashValue] {
+                if gravity & Gravity.FillHorizontal.rawValue > 0 {
+                    var newFrame = AlignmentLayoutView.horizontalFillAlign(self.frame, child: view.frame)
+                    newFrame.insetInPlace(dx: (self.padding.getHorizontalPadding() / 2.0), dy: 0.0)
+                    view.frame = newFrame
+                }
+                
+                if self.orientation == Orientation.Vertical && (gravity & Gravity.CenterHorizontal.rawValue > 0) {
+                    var newFrame = AlignmentLayoutView.centerHorizontalAlign(self.frame, child: view.frame)
+                    view.frame = newFrame
+                }
+            }
+        }
     }
     
     required init?(coder aDecoder: NSCoder) {

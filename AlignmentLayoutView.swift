@@ -19,15 +19,34 @@ class AlignmentLayoutView: LayoutView {
         var newHeight = self.frame.height
         var newWidth = self.frame.width
         
+        var sizeChild = false
+        
+        let dimensions = self.getMaxWidthHeightForMatchParent(self)
+
         if effectiveWidthSizing == Sizing.MatchParent {
-            let dimensions = self.getMaxWidthHeightForMatchParent(self)
+            sizeChild = true
             
-            newWidth = dimensions[0]
-            newHeight = dimensions[1]
+            if self.widthAvailable > 0 {
+                newWidth = self.widthAvailable
+            } else {
+                newWidth = dimensions[0]
+            }
+        }
+        
+        if effectiveHeightSizing == Sizing.MatchParent {
+            sizeChild = true
             
-            if let layoutView = self.childView as? LayoutView {
-                layoutView.heightAvailable = newHeight
-                layoutView.widthAvailable = newWidth
+            if self.heightAvailable > 0 {
+                newHeight = self.heightAvailable
+            } else {
+                newHeight = dimensions[1]
+            }
+        }
+        
+        if sizeChild {
+            if let childLayout = self.childView as? LayoutView {
+                childLayout.heightAvailable = newHeight - self.padding.getVerticalPadding()
+                childLayout.widthAvailable = newWidth - self.padding.getHorizontalPadding()
             }
         }
         
